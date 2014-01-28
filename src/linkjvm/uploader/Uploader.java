@@ -1,6 +1,8 @@
 package linkjvm.uploader;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Properties;
 
 import com.jcraft.jsch.ChannelSftp;
@@ -27,7 +29,8 @@ public class Uploader {
 	}
 	
 	public boolean upload(File file) {
-		String remotePath = "/kovan/lib/"+ file.getName().substring(0, file.getName().lastIndexOf('.'));
+		String fileName = file.getName().substring(0, file.getName().lastIndexOf('.'));
+		String remotePath = "/kovan/lib/" + fileName;
 		Session session = null;
 		try {
 			session = jsch.getSession(user, host, 22);
@@ -38,11 +41,21 @@ public class Uploader {
 			channel.connect();
 			channel.mkdir(remotePath);
 			channel.put(file.getAbsolutePath(), remotePath);
+			OutputStream out = channel.put(remotePath + "/"+fileName+".c");
+			out.write("#include <stdlib.h>".getBytes());
+			out.write(("#define JAR_LOCATION "+remotePath).getBytes());
+			out.write(("#define JAR_NAME "+file.getName()).getBytes());
+			out.write(("int main() {return system(\"export BOOTCLASSPATH=\"/usr/share/jamvm/classes.zip:/usr/share/classpath/glibj.zip:/usr/share/classpath/tools.zip:/usr/lib/linkjvmjava.jar\"; "
+					+ "export CLASSPATH=\"/usr/share/jamvm/classes.zip:/usr/share/classpath/glibj.zip:/usr/share/classpath/tools.zip:/usr/lib/linkjvmjava.jar:.\""
+					+ "export LD_LIBRARY_PATH=\"/usr/lib/classpath:/usr/lib\"; java -jar CLASS_LOCATION/JAR_NAME\");}").getBytes());
+			out.flush();
+			out.close();
 			channel.disconnect();
 			session.disconnect();
 			return true;
 		} catch (JSchException | SftpException e) {
-			e.printStackTrace();
+			return false;
+		} catch (IOException e) {
 			return false;
 		}
 	}
