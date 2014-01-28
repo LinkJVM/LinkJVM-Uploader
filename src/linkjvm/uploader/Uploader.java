@@ -62,9 +62,12 @@ public class Uploader {
 			runCommand(session, "/usr/bin/kar-gen /kovan/archives/" + fileName);
 			session.disconnect();
 			return true;
-		} catch (JSchException | SftpException e) {
+		} catch (SftpException e) {
 			e.printStackTrace();
 			return false;
+		} catch (JSchException e) {
+				e.printStackTrace();
+				return false;
 		} catch (IOException e) {
 			e.printStackTrace();
 			return false;
