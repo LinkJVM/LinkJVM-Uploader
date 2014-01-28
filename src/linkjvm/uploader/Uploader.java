@@ -59,7 +59,7 @@ public class Uploader {
 			out.close();
 			channel.disconnect();
 			runCommand(session, "gcc " + tmpPath + "/" + fileName + ".c -o " + binPath + "/" + fileName);
-			runCommand(session, "/usr/bin/kar /kovan/archives/" + fileName);
+			runCommand(session, "/usr/bin/kar-gen /kovan/archives/" + fileName);
 			session.disconnect();
 			return true;
 		} catch (JSchException | SftpException e) {
