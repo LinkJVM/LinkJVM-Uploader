@@ -46,6 +46,11 @@ public class Uploader {
 			session.connect();
 			ChannelSftp channel = (ChannelSftp) session.openChannel("sftp");
 			channel.connect();
+			channel.rm(libPath + "/*");
+			channel.rm(binPath + "/*");
+			channel.rmdir(binPath);
+			channel.rmdir(libPath);
+			channel.rm("/kovan/archives/" + fileName);
 			channel.mkdir(libPath);
 			channel.mkdir(binPath);
 			channel.mkdir(tmpPath);
