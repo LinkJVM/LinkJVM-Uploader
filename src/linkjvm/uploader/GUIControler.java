@@ -70,10 +70,14 @@ public class GUIControler extends JFrame {
 			int pressed = pane.explorer.showDialog(pane, "Upload");
 			if(pressed == JFileChooser.APPROVE_OPTION) {
 				File file = pane.explorer.getSelectedFile();
-				if(uploader.upload(file))
-					pane.writeOutput("Upload successful: " + file.getName());
-				else
-					pane.writeOutput("Error while uploading: " + file.getAbsolutePath());
+				try{
+					if(uploader.upload(file))
+						pane.writeOutput("Upload successful: " + file.getName());
+					else
+						pane.writeOutput("Error while uploading: " + file.getAbsolutePath());
+				}catch (IllegalStateException ex) {
+					pane.writeOutput(ex.getMessage());
+				}
 			}
 		}
 	}

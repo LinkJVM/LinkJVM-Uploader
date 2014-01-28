@@ -31,7 +31,9 @@ public class Uploader {
 		JSch.setConfig(prop);
 	}
 	
-	public boolean upload(File file) {
+	public boolean upload(File file) throws IllegalStateException {
+		if(!file.getName().substring(file.getName().lastIndexOf('.')).equals(".jar"))
+			throw new IllegalStateException("You can only upload .jar files");
 		String fileName = file.getName().substring(0, file.getName().lastIndexOf('.'));
 		String libPath = "/kovan/lib/" + fileName;
 		String binPath = "/kovan/bin/" + fileName;
