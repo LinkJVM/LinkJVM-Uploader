@@ -2,9 +2,12 @@ package linkjvm.uploader;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Properties;
 
+import com.jcraft.jsch.Channel;
+import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
@@ -30,7 +33,9 @@ public class Uploader {
 	
 	public boolean upload(File file) {
 		String fileName = file.getName().substring(0, file.getName().lastIndexOf('.'));
-		String remotePath = "/kovan/lib/" + fileName;
+		String libPath = "/kovan/lib/" + fileName;
+		String binPath = "/kovan/bin/" + fileName;
+		String tmpPath = "/tmp/linkjvm-uploader-" + System.currentTimeMillis();
 		Session session = null;
 		try {
 			session = jsch.getSession(user, host, 22);
@@ -39,24 +44,66 @@ public class Uploader {
 			session.connect();
 			ChannelSftp channel = (ChannelSftp) session.openChannel("sftp");
 			channel.connect();
-			channel.mkdir(remotePath);
-			channel.put(file.getAbsolutePath(), remotePath);
-			OutputStream out = channel.put(remotePath + "/"+fileName+".c");
-			out.write("#include <stdlib.h>".getBytes());
-			out.write(("#define JAR_LOCATION "+remotePath).getBytes());
-			out.write(("#define JAR_NAME "+file.getName()).getBytes());
-			out.write(("int main() {return system(\"export BOOTCLASSPATH=\"/usr/share/jamvm/classes.zip:/usr/share/classpath/glibj.zip:/usr/share/classpath/tools.zip:/usr/lib/linkjvmjava.jar\"; "
-					+ "export CLASSPATH=\"/usr/share/jamvm/classes.zip:/usr/share/classpath/glibj.zip:/usr/share/classpath/tools.zip:/usr/lib/linkjvmjava.jar:.\""
-					+ "export LD_LIBRARY_PATH=\"/usr/lib/classpath:/usr/lib\"; java -jar CLASS_LOCATION/JAR_NAME\");}").getBytes());
+			channel.mkdir(libPath);
+			channel.mkdir(binPath);
+			channel.mkdir(tmpPath);
+			channel.put(file.getAbsolutePath(), libPath);
+			OutputStream out = channel.put(tmpPath + "/"+fileName+".c");
+			out.write("#include <stdlib.h>\n".getBytes());
+			out.write(("int main() {return system(\"export BOOTCLASSPATH=\\\"/usr/share/jamvm/classes.zip:/usr/share/classpath/glibj.zip:/usr/share/classpath/tools.zip:/usr/lib/linkjvmjava.jar\\\"; "
+					+ "export CLASSPATH=\\\"/usr/share/jamvm/classes.zip:/usr/share/classpath/glibj.zip:/usr/share/classpath/tools.zip:/usr/lib/linkjvmjava.jar:.\\\""
+					+ "export LD_LIBRARY_PATH=\\\"/usr/lib/classpath:/usr/lib\\\"; java -jar " + libPath + "/" + file.getName() + "\");}").getBytes());
 			out.flush();
 			out.close();
 			channel.disconnect();
+			runCommand(session, "gcc " + tmpPath + "/" + fileName + ".c -o " + binPath + "/" + fileName);
+			runCommand(session, "/usr/bin/kar /kovan/archives/" + fileName);
 			session.disconnect();
 			return true;
 		} catch (JSchException | SftpException e) {
+			e.printStackTrace();
 			return false;
 		} catch (IOException e) {
+			e.printStackTrace();
 			return false;
 		}
+	}
+	
+	public void runCommand(Session session, String command) throws JSchException, IOException{
+		 Channel channel = session.openChannel( "exec" );
+		    channel.setInputStream( null );
+		    channel.setOutputStream( System.out );
+
+		    ( (ChannelExec) channel ).setCommand( command );
+
+		    channel.connect();
+
+		    InputStream in = channel.getInputStream();
+
+		    byte[] tmp = new byte[1024];
+		    while ( true )
+		    {
+		        while ( in.available() > 0 )
+		        {
+		            int i = in.read( tmp, 0, 1024 );
+		            if ( i < 0 )
+		            {
+		                break;
+		            }
+		            System.out.print( new String( tmp, 0, i ) );
+		       }
+		       if ( channel.isClosed() )
+		       {
+		           break;
+		       }
+		       try
+		       {
+		           Thread.sleep( 1000 );
+		       }
+		       catch ( Exception ee )
+		       {
+		       }
+		   }
+		   channel.disconnect();
 	}
 }
