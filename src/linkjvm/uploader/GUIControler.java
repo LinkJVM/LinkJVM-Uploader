@@ -23,6 +23,7 @@ public class GUIControler extends JFrame {
 	public GUIControler(Uploader uploader) {
 		super();
 		this.setSize(400, 200);
+		this.setTitle("JARtoLinkUploader");
 		this.setDefaultCloseOperation(EXIT_ON_CLOSE);
 		this.setVisible(true);
 		this.uploader = uploader;
