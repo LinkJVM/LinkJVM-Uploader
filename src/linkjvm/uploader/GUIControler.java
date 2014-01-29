@@ -49,6 +49,7 @@ public class GUIControler extends JFrame {
 			explorer.setAcceptAllFileFilterUsed(false);
 			explorer.setFileFilter(new FileNameExtensionFilter("JAR-File .jar", "jar"));
 			explorer.setFileHidingEnabled(true);
+			output.setEditable(false);
 			scrollpane = new JScrollPane(output);
 			this.add(uploadButton);
 			this.add(scrollpane);
