@@ -42,7 +42,7 @@ public class Uploader {
 		try {
 			session = jsch.getSession(user, host, 22);
 			session.setPassword(password);
-			session.setTimeout(2500);
+			session.setTimeout(7000);
 			session.connect();
 			ChannelSftp channel = (ChannelSftp) session.openChannel("sftp");
 			channel.connect();
