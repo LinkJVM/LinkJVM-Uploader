@@ -20,6 +20,7 @@ public class Uploader {
 	private String host;
 	private String user;
 	private String password;
+	private File lastFile;
 	
 	public Uploader(String host,String user, String password) {
 		this.jsch = new JSch();
@@ -31,9 +32,34 @@ public class Uploader {
 		JSch.setConfig(prop);
 	}
 	
+	public String getHost() {
+		return host;
+	}
+
+	public void setHost(String host) {
+		this.host = host;
+	}
+
+	public String getUser() {
+		return user;
+	}
+
+	public void setUser(String user) {
+		this.user = user;
+	}
+
+	public String getPassword() {
+		return password;
+	}
+
+	public void setPassword(String password) {
+		this.password = password;
+	}
+	
 	public boolean upload(File file) throws IllegalStateException {
-		if(!file.getName().substring(file.getName().lastIndexOf('.')).equals(".jar"))
+		if(!file.getName().substring(file.getName().lastIndexOf('.')).equals(".jar")) {
 			throw new IllegalStateException("You can only upload .jar files");
+		}
 		String fileName = file.getName().substring(0, file.getName().lastIndexOf('.'));
 		String libPath = "/kovan/lib/" + fileName;
 		String binPath = "/kovan/bin/" + fileName;
@@ -68,16 +94,17 @@ public class Uploader {
 			runCommand(session, "gcc " + tmpPath + "/" + fileName + ".c -o " + binPath + "/" + fileName);
 			runCommand(session, "/usr/bin/kar-gen /kovan/archives/" + fileName);
 			session.disconnect();
+			this.lastFile = file;
 			return true;
 		} catch (SftpException e) {
 			e.printStackTrace();
-			return false;
+			throw new IllegalStateException(e.getMessage());
 		} catch (JSchException e) {
-				e.printStackTrace();
-				return false;
+			e.printStackTrace();
+			throw new IllegalStateException(e.getMessage());
 		} catch (IOException e) {
 			e.printStackTrace();
-			return false;
+			throw new IllegalStateException(e.getMessage());
 		}
 	}
 	
@@ -117,5 +144,20 @@ public class Uploader {
 		       }
 		   }
 		   channel.disconnect();
+	}
+	
+	public boolean isFileUploaded() {
+		return (this.lastFile == null ? false : true);
+	}
+	
+	public boolean reupload(){
+		if(this.isFileUploaded())
+			return upload(lastFile);
+		else
+			return false;
+	}
+	
+	public File getLastFile() {
+		return lastFile;
 	}
 }
